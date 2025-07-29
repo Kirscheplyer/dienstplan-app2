@@ -1,106 +1,61 @@
 
+import React, { useState, useEffect } from "react";
 import { useUser, UserButton } from "@clerk/clerk-react";
+
 const gespeicherteMitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
-import { useState, useEffect } from "react";
-import DienstplanApp from "../DienstplanApp";
 
-const ADMIN_ID = "user_30NpYU323qGA3LO4JedrBWRQXXP";
-
-// 
-const mitarbeiterListe = gespeicherteMitarbeiter.map((m) => {
-  if (m.rolle === "Azubi" && m.rohdaten) {
-    return {
-      ...m,
-      regeln: (datum) => {
-        const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-        const tag = tage[datum.getDay()];
-        return m.rohdaten?.[tag] || null;
-      }
-    };
-  }
-  return m;
-});
-
-mitarbeiterListe.push(...gespeicherteMitarbeiter.filter(m => !mitarbeiterListe.some(e => e.name === m.name)));
-
-const schichtzeiten = {
-  moDo: {
-    früh: "07:30 - 14:30",
-    spät: "13:30 - 20:30"
-  },
-  fr: {
-    früh: "07:30 - 13:30",
-    spät: "12:30 - 18:30"
-  }
-};
-
-export default function Admin() {
+function Admin() {
   const { user } = useUser();
+  const ADMIN_ID = import.meta.env.VITE_ADMIN_ID;
   const [dienstplan, setDienstplan] = useState([]);
 
-  useEffect(() => {
-    const data = localStorage.getItem("dienstplan");
-    if (data) {
-      setDienstplan(JSON.parse(data));
+  const dienstplanErstellen = () => {
+    const start = new Date();
+    const plan = [];
+
+    for (let i = 0; i < 14; i++) {
+      const datum = new Date(start);
+      datum.setDate(start.getDate() + i);
+
+      const wochentag = datum.toLocaleDateString("de-DE", { weekday: "short" });
+
+      gespeicherteMitarbeiter.forEach((m, idx) => {
+        let schicht = "";
+
+        if (m.rolle === "Azubi" && m.rohdaten) {
+          const regel = m.rohdaten[wochentag];
+          schicht = regel || "08:00 - 14:00";
+        } else {
+          // Einfacher Schichtplan für ZFAs
+          if (["Mo", "Di", "Mi", "Do"].includes(wochentag)) {
+            schicht = "13:30 - 20:30";
+          } else if (wochentag === "Fr") {
+            schicht = "12:30 - 18:30";
+          } else {
+            schicht = "Frei";
+          }
+        }
+
+        plan.push({
+          datum: datum.toLocaleDateString("de-DE"),
+          name: m.name,
+          schicht,
+        });
+      });
     }
+
+    localStorage.setItem("dienstplan", JSON.stringify(plan));
+    setDienstplan(plan);
+  };
+
+  useEffect(() => {
+    const gespeichert = localStorage.getItem("dienstplan");
+    if (gespeichert) setDienstplan(JSON.parse(gespeichert));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("dienstplan", JSON.stringify(dienstplan));
-  }, [dienstplan]);
-
-  const handleEdit = (index, neueSchicht) => {
-    const kopie = [...dienstplan];
-    kopie[index].schicht = neueSchicht;
-    setDienstplan(kopie);
-  };
-
   if (user?.id !== ADMIN_ID) {
-    return <div style={{ padding: "2rem" }}>Zugriff verweigert – nur für Admin.</div>;
+    return <div>Kein Zugriff.</div>;
   }
-
-  const generateDienstplan = () => {
-    const heute = new Date();
-    const neuerPlan = [];
-
-    for (let woche = 0; woche < 2; woche++) {
-      for (let tag = 0; tag < 7; tag++) {
-        const datum = new Date(heute);
-        datum.setDate(heute.getDate() + woche * 7 + tag);
-        const wochentag = datum.getDay();
-        const datumStr = datum.toISOString().split("T")[0];
-
-        if (wochentag >= 1 && wochentag <= 5) {
-          mitarbeiterListe.forEach((m, i) => {
-            let einsatz = "-";
-
-            if (m.rolle === "Azubi") {
-              const regel = m.regeln?.(datum);
-              if (!regel) {
-                const zeiten = (wochentag === 5) ? schichtzeiten["fr"] : schichtzeiten["moDo"];
-                einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.spät})`;
-              } else if (regel.includes("ab")) {
-                einsatz = `Teilzeit (${regel})`;
-              } else {
-                einsatz = regel;
-              }
-            } else {
-              const zeiten = (wochentag === 5) ? schichtzeiten["fr"] : schichtzeiten["moDo"];
-              einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.spät})`;
-            }
-
-            neuerPlan.push({
-              datum: datumStr,
-              name: m.name,
-              schicht: einsatz,
-            });
-          });
-        }
-      }
-    }
-
-    setDienstplan(neuerPlan);
-  };
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -108,56 +63,34 @@ export default function Admin() {
       <h1>Admin-Bereich</h1>
 
       <section>
-        <h2>Dienstplan automatisch generieren</h2>
-        <button onClick={generateDienstplan}>2-Wochen-Dienstplan erstellen</button>
-      </section>
+        <h2>2-Wochen-Dienstplan erstellen</h2>
+        <button onClick={dienstplanErstellen}>Dienstplan generieren</button>
 
-      <section>
-        <h2>Aktueller Dienstplan</h2>
         {dienstplan.length === 0 ? (
           <p>Noch keine Schichten generiert.</p>
         ) : (
-          <table border="1" cellPadding="5" style={{ marginTop: "1rem" }}>
+          <table border="1" cellPadding="5" style={{ marginTop: "1rem", borderCollapse: "collapse" }}>
             <thead>
               <tr>
                 <th>Datum</th>
                 <th>Name</th>
                 <th>Schicht</th>
-                <th>Aktion</th>
               </tr>
             </thead>
             <tbody>
-              {dienstplan.map((eintrag, index) => (
-                <tr key={index}>
+              {dienstplan.map((eintrag, i) => (
+                <tr key={i}>
                   <td>{eintrag.datum}</td>
                   <td>{eintrag.name}</td>
                   <td>{eintrag.schicht}</td>
-                  <td>
-                    <select value={eintrag.schicht} onChange={(e) => handleEdit(index, e.target.value)}>
-                      <option value="Früh (07:30 - 14:30)">Früh (07:30 - 14:30)</option>
-                      <option value="Spät (13:30 - 20:30)">Spät (13:30 - 20:30)</option>
-                      <option value="Früh (07:30 - 13:30)">Früh (07:30 - 13:30)</option>
-                      <option value="Spät (12:30 - 18:30)">Spät (12:30 - 18:30)</option>
-                      <option value="Schule (ganztägig)">Schule (ganztägig)</option>
-                      <option value="Teilzeit (Verfügbar ab 14 Uhr)">Teilzeit (Verfügbar ab 14 Uhr)</option>
-                      <option value="Teilzeit (Verfügbar ab 16 Uhr)">Teilzeit (Verfügbar ab 16 Uhr)</option>
-                      <option value="Schule ab 11 Uhr">Schule ab 11 Uhr</option>
-                      <option value="Schule ab 10:20 Uhr">Schule ab 10:20 Uhr</option>
-                      <option value="Frei">Frei</option>
-                      <option value="-">-</option>
-                    </select>
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </section>
-
-      <section style={{ marginTop: "3rem" }}>
-        <h2>Mitarbeiterverwaltung (Testfunktion)</h2>
-        <DienstplanApp />
-      </section>
     </div>
   );
 }
+
+export default Admin;
