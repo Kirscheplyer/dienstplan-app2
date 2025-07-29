@@ -34,9 +34,9 @@ const mitarbeiterListe = [
       return null;
     },
   },
-  { name: "Pam", rolle: "ZFA" },
-  { name: "Andre", rolle: "ZFA" },
-  { name: "Susanne", rolle: "ZFA" },
+  { name: "PC", rolle: "ZFA" },
+  { name: "AM", rolle: "ZFA" },
+  { name: "SA", rolle: "ZFA" },
 ];
 
 const schichtzeiten = {
