@@ -64,14 +64,14 @@ function Admin() {
     if (gespeichert) setDienstplan(JSON.parse(gespeichert));
   }, []);
 
-  if (user?.id !== ADMIN_ID) {
+  if (user?.primaryEmailAddress?.emailAddress !== ADMIN_EMAIL) {
     return <div>Kein Zugriff.</div>;
   }
 
   return (
     <div style={{ padding: "2rem" }}>
       <UserButton />
-      <h1>Admin-Bereich</h1>
+      <h1>Admin-Bereich</h1><p>Deine aktuelle E-Mail: {user?.primaryEmailAddress?.emailAddress}</p>
 
       <section>
         <h2>2-Wochen-Dienstplan erstellen</h2>
