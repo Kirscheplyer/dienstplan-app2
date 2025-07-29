@@ -13,6 +13,18 @@ function Admin() {
     const start = new Date();
     const plan = [];
 
+    const getCalendarWeek = (date) => {
+      const target = new Date(date.valueOf());
+      const dayNr = (date.getDay() + 6) % 7;
+      target.setDate(target.getDate() - dayNr + 3);
+      const firstThursday = new Date(target.getFullYear(), 0, 4);
+      const diff = target - firstThursday;
+      return 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
+    };
+
+    const aktuelleWoche = getCalendarWeek(start);
+    const zfaFruehschicht = aktuelleWoche % 2 === 1; // ungerade = Früh, gerade = Spät
+
     for (let i = 0; i < 14; i++) {
       const datum = new Date(start);
       datum.setDate(start.getDate() + i);
@@ -24,13 +36,12 @@ function Admin() {
 
         if (m.rolle === "Azubi" && m.rohdaten) {
           const regel = m.rohdaten[wochentag];
-          schicht = regel || "08:00 - 14:00";
+          schicht = regel || "07:30 - 14:30";
         } else {
-          // Einfacher Schichtplan für ZFAs
           if (["Mo", "Di", "Mi", "Do"].includes(wochentag)) {
-            schicht = "13:30 - 20:30";
+            schicht = zfaFruehschicht ? "07:30 - 14:30" : "13:30 - 20:30";
           } else if (wochentag === "Fr") {
-            schicht = "12:30 - 18:30";
+            schicht = zfaFruehschicht ? "07:30 - 13:30" : "12:30 - 18:30";
           } else {
             schicht = "Frei";
           }
