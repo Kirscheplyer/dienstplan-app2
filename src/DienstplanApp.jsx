@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import "./style.css";
 
-const zfas = ["PC", "AM", "SA"];
+const zfas = ["PAM", "Andre", "Susanne"];
 const dienstplanData = [
   { tag: "Montag", frueh: "PC", spaet: "AM", springer: "SA" },
   { tag: "Dienstag", frueh: "AM", spaet: "SA", springer: "PC" },
