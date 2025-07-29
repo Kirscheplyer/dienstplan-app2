@@ -1,69 +1,52 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./style.css";
 
 export default function DienstplanApp() {
-  const [mitarbeiter, setMitarbeiter] = useState([
-    { name: "Pam", rolle: "ZFA" },
-    { name: "Andre", rolle: "ZFA" },
-    { name: "Susanne", rolle: "Azubi" },
-  ]);
-
+  const [mitarbeiter, setMitarbeiter] = useState([]);
   const [neuerName, setNeuerName] = useState("");
   const [neueRolle, setNeueRolle] = useState("ZFA");
+  const [azubiRegeln, setAzubiRegeln] = useState({});
 
-  const [dienstplan, setDienstplan] = useState([
-    { tag: "Montag" },
-    { tag: "Dienstag" },
-    { tag: "Mittwoch" },
-    { tag: "Donnerstag" },
-    { tag: "Freitag" },
-  ]);
+  useEffect(() => {
+    const saved = localStorage.getItem("mitarbeiterListe");
+    if (saved) setMitarbeiter(JSON.parse(saved));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("mitarbeiterListe", JSON.stringify(mitarbeiter));
+  }, [mitarbeiter]);
+
+  const handleRegelChange = (tag, value) => {
+    setAzubiRegeln(prev => ({ ...prev, [tag]: value }));
+  };
 
   const hinzufuegen = () => {
     if (neuerName.trim() === "") return;
-    setMitarbeiter([...mitarbeiter, { name: neuerName.trim(), rolle: neueRolle }]);
+    const neuerEintrag = {
+      name: neuerName.trim(),
+      rolle: neueRolle,
+    };
+    if (neueRolle === "Azubi") {
+      neuerEintrag.regeln = (datum) => {
+        const tag = datum.getDay();
+        const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+        return azubiRegeln[tage[tag]];
+      };
+      neuerEintrag.rohdaten = azubiRegeln; // für Anzeige / Debug
+    }
+    setMitarbeiter([...mitarbeiter, neuerEintrag]);
     setNeuerName("");
     setNeueRolle("ZFA");
+    setAzubiRegeln({});
   };
 
   const entfernen = (name) => {
     setMitarbeiter(mitarbeiter.filter(m => m.name !== name));
   };
 
-  const getSchichtMitarbeiter = (tag, art) => {
-    const passende = mitarbeiter.filter(m => {
-      if (m.rolle === "Azubi" && art === "spaet") return false;
-      return true;
-    });
-    const index = (tag.charCodeAt(0) + art.length) % passende.length;
-    return passende[index]?.name || "-";
-  };
-
   return (
-    <div className="app">
-      <h1>Dienstplan</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Tag</th>
-            <th>Früh</th>
-            <th>Spät</th>
-            <th>Springer</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dienstplan.map((eintrag, index) => (
-            <tr key={index}>
-              <td>{eintrag.tag}</td>
-              <td>{getSchichtMitarbeiter(eintrag.tag, "frueh")}</td>
-              <td>{getSchichtMitarbeiter(eintrag.tag, "spaet")}</td>
-              <td>{getSchichtMitarbeiter(eintrag.tag, "springer")}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
+    <div>
       <h2>Mitarbeiterverwaltung</h2>
       <input
         type="text"
@@ -75,13 +58,29 @@ export default function DienstplanApp() {
         <option value="ZFA">ZFA</option>
         <option value="Azubi">Azubi</option>
       </select>
+      {neueRolle === "Azubi" && (
+        <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+          <p><b>Wöchentliche Azubi-Regeln:</b></p>
+          {["Mo", "Di", "Mi", "Do", "Fr"].map((tag) => (
+            <div key={tag}>
+              <label>{tag}: </label>
+              <input
+                type="text"
+                placeholder="z.B. Schule ab 11 Uhr / Verfügbar ab 14 Uhr / frei / leer lassen"
+                value={azubiRegeln[tag] || ""}
+                onChange={(e) => handleRegelChange(tag, e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
       <button onClick={hinzufuegen}>Hinzufügen</button>
 
       <ul>
         {mitarbeiter.map((m, i) => (
           <li key={i}>
             {m.name} ({m.rolle})
-            <button onClick={() => entfernen(m.name)}>Entfernen</button>
+            <button onClick={() => entfernen(m.name)} style={{ marginLeft: "1rem" }}>Entfernen</button>
           </li>
         ))}
       </ul>
