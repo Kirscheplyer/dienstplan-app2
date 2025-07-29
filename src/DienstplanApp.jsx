@@ -2,13 +2,13 @@
 import React, { useState } from "react";
 import "./style.css";
 
-const zfas = ["PAM", "Andre", "Susanne"];
+const zfas = ["Pam", "Andre", "Susanne"];
 const dienstplanData = [
-  { tag: "Montag", frueh: "PC", spaet: "AM", springer: "SA" },
-  { tag: "Dienstag", frueh: "AM", spaet: "SA", springer: "PC" },
-  { tag: "Mittwoch", frueh: "SA", spaet: "PC", springer: "AM" },
-  { tag: "Donnerstag", frueh: "PC", spaet: "AM", springer: "SA" },
-  { tag: "Freitag", frueh: "AM", spaet: "SA", springer: "PC" },
+  { tag: "Montag", frueh: "Pam", spaet: "Andre", springer: "Susanne" },
+  { tag: "Dienstag", frueh: "Andre", spaet: "Susanne", springer: "Pam" },
+  { tag: "Mittwoch", frueh: "Susanne", spaet: "Pam", springer: "Andre" },
+  { tag: "Donnerstag", frueh: "Pam", spaet: "Andre", springer: "Susanne" },
+  { tag: "Freitag", frueh: "Andre", spaet: "Susanne", springer: "Pam" },
 ];
 
 export default function App() {
