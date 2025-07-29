@@ -5,7 +5,6 @@ import DienstplanApp from "../DienstplanApp";
 
 const ADMIN_ID = "user_30NpYU323qGA3LO4JedrBWRQXXP";
 
-const gespeicherteMitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
 const mitarbeiterListe = [
   {
     name: "Aya",
@@ -41,9 +40,6 @@ const mitarbeiterListe = [
   { name: "Andre", rolle: "ZFA" },
   { name: "Susanne", rolle: "ZFA" },
 ];
-
-// lokale Ergänzungen hinzufügen
-mitarbeiterListe.push(...gespeicherteMitarbeiter.filter(m => !mitarbeiterListe.some(e => e.name === m.name)));
 
 const schichtzeiten = {
   moDo: {
@@ -100,7 +96,7 @@ export default function Admin() {
               const regel = m.regeln?.(datum);
               if (!regel) {
                 const zeiten = (wochentag === 5) ? schichtzeiten["fr"] : schichtzeiten["moDo"];
-                einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.spät})`;
+                einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.späät})`;
               } else if (regel.includes("ab")) {
                 einsatz = `Teilzeit (${regel})`;
               } else {
@@ -108,7 +104,7 @@ export default function Admin() {
               }
             } else {
               const zeiten = (wochentag === 5) ? schichtzeiten["fr"] : schichtzeiten["moDo"];
-              einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.spät})`;
+              einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.späät})`;
             }
 
             neuerPlan.push({
