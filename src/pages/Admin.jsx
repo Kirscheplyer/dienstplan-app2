@@ -176,7 +176,7 @@ export default function Admin() {
 }
 
   return (
-    <div style={ padding: "2rem" }>
+    <div style={{ padding: "2rem" }}>
       <UserButton />
       <h1>Admin-Bereich</h1>
 
