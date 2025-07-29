@@ -1,13 +1,12 @@
 
 import { useUser, UserButton } from "@clerk/clerk-react";
+const gespeicherteMitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
 import { useState, useEffect } from "react";
 import DienstplanApp from "../DienstplanApp";
 
 const ADMIN_ID = "user_30NpYU323qGA3LO4JedrBWRQXXP";
 
-const gespeicherteMitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
-
-const gespeicherteMitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
+// 
 const mitarbeiterListe = gespeicherteMitarbeiter.map((m) => {
   if (m.rolle === "Azubi" && m.rohdaten) {
     return {
