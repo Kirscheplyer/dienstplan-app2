@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Wochenansicht from "./pages/Wochenansicht";
+import StundenRechner from "./pages/StundenRechner";
 
 const ADMIN_ID = "user_30NpYU323qGA3LO4JedrBWRQXXP";
 
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/wochen" element={<Wochenansicht />} />
+          <Route path="/stunden" element={<StundenRechner />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </SignedIn>
