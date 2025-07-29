@@ -74,7 +74,13 @@ export default function Admin() {
   };
 
   if (user?.id !== ADMIN_ID) {
-    return <div style={{ padding: "2rem" }}>Zugriff verweigert – nur für Admin.</div>;
+    return <div style={{ padding: "2rem" }}>Zugriff verweigert – nur für Admin.
+      <section style={{ marginTop: "3rem" }}>
+        <h2>Mitarbeiterverwaltung (Testfunktion)</h2>
+        <DienstplanApp />
+      </section>
+
+    </div>;
   }
 
   const generateDienstplan = () => {
@@ -171,6 +177,12 @@ export default function Admin() {
           </table>
         )}
       </section>
+    
+      <section style={{ marginTop: "3rem" }}>
+        <h2>Mitarbeiterverwaltung (Testfunktion)</h2>
+        <DienstplanApp />
+      </section>
+
     </div>
   );
 }
@@ -231,6 +243,12 @@ export default function Admin() {
         <h2>Mitarbeiterverwaltung (Testfunktion)</h2>
         <DienstplanApp />
       </section>
+    
+      <section style={{ marginTop: "3rem" }}>
+        <h2>Mitarbeiterverwaltung (Testfunktion)</h2>
+        <DienstplanApp />
+      </section>
+
     </div>
   );
 }
