@@ -96,7 +96,7 @@ export default function Admin() {
               const regel = m.regeln?.(datum);
               if (!regel) {
                 const zeiten = (wochentag === 5) ? schichtzeiten["fr"] : schichtzeiten["moDo"];
-                einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.späät})`;
+                einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.spät})`;
               } else if (regel.includes("ab")) {
                 einsatz = `Teilzeit (${regel})`;
               } else {
@@ -104,7 +104,7 @@ export default function Admin() {
               }
             } else {
               const zeiten = (wochentag === 5) ? schichtzeiten["fr"] : schichtzeiten["moDo"];
-              einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.späät})`;
+              einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.spät})`;
             }
 
             neuerPlan.push({
