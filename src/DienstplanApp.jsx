@@ -33,7 +33,7 @@ export default function DienstplanApp() {
         const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
         return azubiRegeln[tage[tag]];
       };
-      neuerEintrag.rohdaten = azubiRegeln;
+      neuerEintrag.rohdaten = azubiRegeln; // für Anzeige / Debug
     }
     setMitarbeiter([...mitarbeiter, neuerEintrag]);
     setNeuerName("");
@@ -42,8 +42,7 @@ export default function DienstplanApp() {
   };
 
   const entfernen = (name) => {
-    const gefiltert = mitarbeiter.filter(m => m.name !== name);
-    setMitarbeiter(gefiltert);
+    setMitarbeiter(mitarbeiter.filter(m => m.name !== name));
   };
 
   return (
@@ -67,7 +66,7 @@ export default function DienstplanApp() {
               <label>{tag}: </label>
               <input
                 type="text"
-                placeholder="z.B. Schule ab 11 Uhr / Verfügbar ab 14 Uhr"
+                placeholder="z.B. Schule ab 11 Uhr / Verfügbar ab 14 Uhr / frei / leer lassen"
                 value={azubiRegeln[tag] || ""}
                 onChange={(e) => handleRegelChange(tag, e.target.value)}
               />
@@ -77,39 +76,14 @@ export default function DienstplanApp() {
       )}
       <button onClick={hinzufuegen}>Hinzufügen</button>
 
-      <h3 style={{ marginTop: "2rem" }}>Aktuelle Mitarbeitendenliste:</h3>
-      {mitarbeiter.length === 0 ? (
-        <p>Keine Mitarbeitenden gespeichert.</p>
-      ) : (
-        <table border="1" cellPadding="8" style={{ marginTop: "1rem", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Rolle</th>
-              <th>Regeln (Azubi)</th>
-              <th>Aktion</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mitarbeiter.map((m, i) => (
-              <tr key={i}>
-                <td>{m.name}</td>
-                <td>{m.rolle}</td>
-                <td>
-                  {m.rohdaten
-                    ? Object.entries(m.rohdaten)
-                        .map(([tag, reg]) => `${tag}: ${reg}`)
-                        .join(" | ")
-                    : "—"}
-                </td>
-                <td>
-                  <button onClick={() => entfernen(m.name)}>Entfernen</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <ul>
+        {mitarbeiter.map((m, i) => (
+          <li key={i}>
+            {m.name} ({m.rolle})
+            <button onClick={() => entfernen(m.name)} style={{ marginLeft: "1rem" }}>Entfernen</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
