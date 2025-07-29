@@ -64,7 +64,7 @@ function Admin() {
     if (gespeichert) setDienstplan(JSON.parse(gespeichert));
   }, []);
 
-  if (user?.primaryEmailAddress?.emailAddress !== ADMIN_EMAIL) {
+  if (user?.primaryEmailAddress?.emailAddress !== import.meta.env.VITE_ADMIN_EMAIL) {
     return <div>Kein Zugriff.</div>;
   }
 
