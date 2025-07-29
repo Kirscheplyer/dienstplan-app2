@@ -1,174 +1,70 @@
+
 import { useUser, UserButton } from "@clerk/clerk-react";
 import { useState, useEffect } from "react";
 
 const ADMIN_ID = "user_30NpYU323qGA3LO4JedrBWRQXXP";
 
-const mitarbeiterListe = [
-  {
-    name: "Aya",
-    rolle: "Azubi",
-    regeln: (datum) => {
-      const tag = datum.getDay();
-      if (tag === 3) return "Schule ab 11 Uhr";
-      if (tag === 5) return "Schule (ganztägig)";
-      return null;
-    },
-  },
-  {
-    name: "Chin",
-    rolle: "Azubi",
-    regeln: (datum) => {
-      const tag = datum.getDay();
-      if (tag === 1) return "Verfügbar ab 14 Uhr";
-      if (tag === 2) return "Schule (ganztägig)";
-      return null;
-    },
-  },
-  {
-    name: "Hyoung",
-    rolle: "Azubi",
-    regeln: (datum) => {
-      const tag = datum.getDay();
-      if (tag === 2) return "Verfügbar ab 16 Uhr";
-      if (tag === 3) return "Schule ab 10:20 Uhr";
-      return null;
-    },
-  },
-  { name: "PC", rolle: "ZFA" },
-  { name: "AM", rolle: "ZFA" },
-  { name: "SA", rolle: "ZFA" },
-];
-
-const schichtzeiten = {
-  moDo: {
-    früh: "07:30 - 14:30",
-    spät: "13:30 - 20:30"
-  },
-  fr: {
-    früh: "07:30 - 13:30",
-    spät: "12:30 - 18:30"
-  }
-};
-
 export default function Admin() {
   const { user } = useUser();
-  const [dienstplan, setDienstplan] = useState([]);
+  const [mitarbeiter, setMitarbeiter] = useState([
+    { name: "Aya", rolle: "Azubi" },
+    { name: "Chin", rolle: "Azubi" },
+  ]);
+  const [neuerName, setNeuerName] = useState("");
+  const [rolle, setRolle] = useState("Mitarbeiter");
 
-  useEffect(() => {
-    const data = localStorage.getItem("dienstplan");
-    if (data) {
-      setDienstplan(JSON.parse(data));
-    }
-  }, []);
+  const hinzufuegen = () => {
+    if (!neuerName) return;
+    setMitarbeiter([...mitarbeiter, { name: neuerName, rolle }]);
+    setNeuerName("");
+    setRolle("Mitarbeiter");
+  };
 
-  useEffect(() => {
-    localStorage.setItem("dienstplan", JSON.stringify(dienstplan));
-  }, [dienstplan]);
-
-  const handleEdit = (index, neueSchicht) => {
-    const kopie = [...dienstplan];
-    kopie[index].schicht = neueSchicht;
-    setDienstplan(kopie);
+  const entfernen = (name) => {
+    setMitarbeiter(mitarbeiter.filter((m) => m.name !== name));
   };
 
   if (user?.id !== ADMIN_ID) {
-    return <div style={{ padding: "2rem" }}>Zugriff verweigert – nur für Admin.</div>;
+    return <div>Kein Zugriff</div>;
   }
 
-  const generateDienstplan = () => {
-    const heute = new Date();
-    const neuerPlan = [];
-
-    for (let woche = 0; woche < 2; woche++) {
-      for (let tag = 0; tag < 7; tag++) {
-        const datum = new Date(heute);
-        datum.setDate(heute.getDate() + woche * 7 + tag);
-        const wochentag = datum.getDay();
-        const datumStr = datum.toISOString().split("T")[0];
-
-        if (wochentag >= 1 && wochentag <= 5) {
-          mitarbeiterListe.forEach((m, i) => {
-            let einsatz = "-";
-
-            if (m.rolle === "Azubi") {
-              const regel = m.regeln?.(datum);
-              if (!regel) {
-                const zeiten = (wochentag === 5) ? schichtzeiten["fr"] : schichtzeiten["moDo"];
-                einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.spät})`;
-              } else if (regel.includes("ab")) {
-                einsatz = `Teilzeit (${regel})`;
-              } else {
-                einsatz = regel;
-              }
-            } else {
-              const zeiten = (wochentag === 5) ? schichtzeiten["fr"] : schichtzeiten["moDo"];
-              einsatz = i % 2 === 0 ? `Früh (${zeiten.früh})` : `Spät (${zeiten.spät})`;
-            }
-
-            neuerPlan.push({
-              datum: datumStr,
-              name: m.name,
-              schicht: einsatz,
-            });
-          });
-        }
-      }
-    }
-
-    setDienstplan(neuerPlan);
-  };
-
   return (
-    <div style={{ padding: "2rem" }}>
-      <UserButton />
-      <h1>Admin-Bereich</h1>
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Admin: Mitarbeiterverwaltung</h2>
+      <div className="mb-4 space-x-2">
+        <input
+          type="text"
+          placeholder="Name"
+          value={neuerName}
+          onChange={(e) => setNeuerName(e.target.value)}
+          className="border px-2 py-1"
+        />
+        <select
+          value={rolle}
+          onChange={(e) => setRolle(e.target.value)}
+          className="border px-2 py-1"
+        >
+          <option value="Mitarbeiter">Mitarbeiter</option>
+          <option value="Azubi">Azubi</option>
+        </select>
+        <button onClick={hinzufuegen} className="bg-blue-500 text-white px-4 py-1 rounded">
+          Hinzufügen
+        </button>
+      </div>
 
-      <section>
-        <h2>Dienstplan automatisch generieren</h2>
-        <button onClick={generateDienstplan}>2-Wochen-Dienstplan erstellen</button>
-      </section>
-
-      <section>
-        <h2>Aktueller Dienstplan</h2>
-        {dienstplan.length === 0 ? (
-          <p>Noch keine Schichten generiert.</p>
-        ) : (
-          <table border="1" cellPadding="5" style={{ marginTop: "1rem" }}>
-            <thead>
-              <tr>
-                <th>Datum</th>
-                <th>Name</th>
-                <th>Schicht</th>
-                <th>Aktion</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dienstplan.map((eintrag, index) => (
-                <tr key={index}>
-                  <td>{eintrag.datum}</td>
-                  <td>{eintrag.name}</td>
-                  <td>{eintrag.schicht}</td>
-                  <td>
-                    <select value={eintrag.schicht} onChange={(e) => handleEdit(index, e.target.value)}>
-                      <option value="Früh (07:30 - 14:30)">Früh (07:30 - 14:30)</option>
-                      <option value="Spät (13:30 - 20:30)">Spät (13:30 - 20:30)</option>
-                      <option value="Früh (07:30 - 13:30)">Früh (07:30 - 13:30)</option>
-                      <option value="Spät (12:30 - 18:30)">Spät (12:30 - 18:30)</option>
-                      <option value="Schule (ganztägig)">Schule (ganztägig)</option>
-                      <option value="Teilzeit (Verfügbar ab 14 Uhr)">Teilzeit (Verfügbar ab 14 Uhr)</option>
-                      <option value="Teilzeit (Verfügbar ab 16 Uhr)">Teilzeit (Verfügbar ab 16 Uhr)</option>
-                      <option value="Schule ab 11 Uhr">Schule ab 11 Uhr</option>
-                      <option value="Schule ab 10:20 Uhr">Schule ab 10:20 Uhr</option>
-                      <option value="Frei">Frei</option>
-                      <option value="-">-</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+      <ul>
+        {mitarbeiter.map((m) => (
+          <li key={m.name} className="flex justify-between items-center border-b py-1">
+            <span>{m.name} – {m.rolle}</span>
+            <button
+              onClick={() => entfernen(m.name)}
+              className="bg-red-500 text-white px-2 py-1 rounded"
+            >
+              Entfernen
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
