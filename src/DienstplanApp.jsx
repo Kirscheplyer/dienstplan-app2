@@ -2,30 +2,42 @@
 import React, { useState } from "react";
 import "./style.css";
 
-const zfas = ["Pam", "Andre", "Susanne"];
-const dienstplanData = [
-  { tag: "Montag", frueh: "Pam", spaet: "Andre", springer: "Susanne" },
-  { tag: "Dienstag", frueh: "Andre", spaet: "Susanne", springer: "Pam" },
-  { tag: "Mittwoch", frueh: "Susanne", spaet: "Pam", springer: "Andre" },
-  { tag: "Donnerstag", frueh: "Pam", spaet: "Andre", springer: "Susanne" },
-  { tag: "Freitag", frueh: "Andre", spaet: "Susanne", springer: "Pam" },
-];
+export default function DienstplanApp() {
+  const [mitarbeiter, setMitarbeiter] = useState([
+    { name: "Pam", rolle: "ZFA" },
+    { name: "Andre", rolle: "ZFA" },
+    { name: "Susanne", rolle: "Azubi" },
+  ]);
 
-export default function App() {
-  const [nachricht, setNachricht] = useState("");
-  const [chatverlauf, setChatverlauf] = useState([]);
-  const [privatEmpfaenger, setPrivatEmpfaenger] = useState("");
+  const [neuerName, setNeuerName] = useState("");
+  const [neueRolle, setNeueRolle] = useState("ZFA");
 
-  const sendeNachricht = () => {
-    if (nachricht.trim() !== "") {
-      const eintrag = {
-        absender: "Du",
-        empfaenger: privatEmpfaenger || "Alle",
-        text: nachricht
-      };
-      setChatverlauf([...chatverlauf, eintrag]);
-      setNachricht("");
-    }
+  const [dienstplan, setDienstplan] = useState([
+    { tag: "Montag" },
+    { tag: "Dienstag" },
+    { tag: "Mittwoch" },
+    { tag: "Donnerstag" },
+    { tag: "Freitag" },
+  ]);
+
+  const hinzufuegen = () => {
+    if (neuerName.trim() === "") return;
+    setMitarbeiter([...mitarbeiter, { name: neuerName.trim(), rolle: neueRolle }]);
+    setNeuerName("");
+    setNeueRolle("ZFA");
+  };
+
+  const entfernen = (name) => {
+    setMitarbeiter(mitarbeiter.filter(m => m.name !== name));
+  };
+
+  const getSchichtMitarbeiter = (tag, art) => {
+    const passende = mitarbeiter.filter(m => {
+      if (m.rolle === "Azubi" && art === "spaet") return false;
+      return true;
+    });
+    const index = (tag.charCodeAt(0) + art.length) % passende.length;
+    return passende[index]?.name || "-";
   };
 
   return (
@@ -41,40 +53,38 @@ export default function App() {
           </tr>
         </thead>
         <tbody>
-          {dienstplanData.map((eintrag, index) => (
+          {dienstplan.map((eintrag, index) => (
             <tr key={index}>
               <td>{eintrag.tag}</td>
-              <td>{eintrag.frueh}</td>
-              <td>{eintrag.spaet}</td>
-              <td>{eintrag.springer}</td>
+              <td>{getSchichtMitarbeiter(eintrag.tag, "frueh")}</td>
+              <td>{getSchichtMitarbeiter(eintrag.tag, "spaet")}</td>
+              <td>{getSchichtMitarbeiter(eintrag.tag, "springer")}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <h2>Team-Chat</h2>
-      <div className="chatbox">
-        {chatverlauf.map((msg, i) => (
-          <div key={i}>
-            <b>{msg.absender}</b> ➤ <i>{msg.empfaenger}</i>: {msg.text}
-          </div>
+      <h2>Mitarbeiterverwaltung</h2>
+      <input
+        type="text"
+        placeholder="Name"
+        value={neuerName}
+        onChange={(e) => setNeuerName(e.target.value)}
+      />
+      <select value={neueRolle} onChange={(e) => setNeueRolle(e.target.value)}>
+        <option value="ZFA">ZFA</option>
+        <option value="Azubi">Azubi</option>
+      </select>
+      <button onClick={hinzufuegen}>Hinzufügen</button>
+
+      <ul>
+        {mitarbeiter.map((m, i) => (
+          <li key={i}>
+            {m.name} ({m.rolle})
+            <button onClick={() => entfernen(m.name)}>Entfernen</button>
+          </li>
         ))}
-        <div>
-          <input
-            type="text"
-            placeholder="Nachricht eingeben..."
-            value={nachricht}
-            onChange={(e) => setNachricht(e.target.value)}
-          />
-          <select onChange={(e) => setPrivatEmpfaenger(e.target.value)}>
-            <option value="">Alle</option>
-            {zfas.map((name) => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
-          <button onClick={sendeNachricht}>Senden</button>
-        </div>
-      </div>
+      </ul>
     </div>
   );
 }
