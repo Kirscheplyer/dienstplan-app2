@@ -190,7 +190,7 @@ export default function Admin() {
         {dienstplan.length === 0 ? (
           <p>Noch keine Schichten generiert.</p>
         ) : (
-          <table border="1" cellPadding="5" style={ marginTop: "1rem" }>
+          <table border="1" cellPadding="5" style={{ marginTop: "1rem" }}>
             <thead>
               <tr>
                 <th>Datum</th>
@@ -227,7 +227,7 @@ export default function Admin() {
         )}
       </section>
 
-      <section style={ marginTop: "3rem" }>
+      <section style={{ marginTop: "3rem" }}>
         <h2>Mitarbeiterverwaltung (Testfunktion)</h2>
         <DienstplanApp />
       </section>
