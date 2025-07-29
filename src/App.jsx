@@ -3,6 +3,7 @@ import { SignedIn, SignedOut, SignInButton, useUser, UserButton } from "@clerk/c
 import { useEffect } from "react";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
+import Wochenansicht from "./pages/Wochenansicht";
 
 const ADMIN_ID = "user_30NpYU323qGA3LO4JedrBWRQXXP";
 
@@ -37,6 +38,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/wochen" element={<Wochenansicht />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </SignedIn>
