@@ -6,43 +6,22 @@ import DienstplanApp from "../DienstplanApp";
 const ADMIN_ID = "user_30NpYU323qGA3LO4JedrBWRQXXP";
 
 const gespeicherteMitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
-const mitarbeiterListe = [
-  {
-    name: "Aya",
-    rolle: "Azubi",
-    regeln: (datum) => {
-      const tag = datum.getDay();
-      if (tag === 3) return "Schule ab 11 Uhr";
-      if (tag === 5) return "Schule (ganztägig)";
-      return null;
-    },
-  },
-  {
-    name: "Chin",
-    rolle: "Azubi",
-    regeln: (datum) => {
-      const tag = datum.getDay();
-      if (tag === 1) return "Verfügbar ab 14 Uhr";
-      if (tag === 2) return "Schule (ganztägig)";
-      return null;
-    },
-  },
-  {
-    name: "Hyoung",
-    rolle: "Azubi",
-    regeln: (datum) => {
-      const tag = datum.getDay();
-      if (tag === 2) return "Verfügbar ab 16 Uhr";
-      if (tag === 3) return "Schule ab 10:20 Uhr";
-      return null;
-    },
-  },
-  { name: "Pam", rolle: "ZFA" },
-  { name: "Andre", rolle: "ZFA" },
-  { name: "Susanne", rolle: "ZFA" },
-];
 
-// lokale Ergänzungen hinzufügen
+const gespeicherteMitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
+const mitarbeiterListe = gespeicherteMitarbeiter.map((m) => {
+  if (m.rolle === "Azubi" && m.rohdaten) {
+    return {
+      ...m,
+      regeln: (datum) => {
+        const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+        const tag = tage[datum.getDay()];
+        return m.rohdaten?.[tag] || null;
+      }
+    };
+  }
+  return m;
+});
+
 mitarbeiterListe.push(...gespeicherteMitarbeiter.filter(m => !mitarbeiterListe.some(e => e.name === m.name)));
 
 const schichtzeiten = {
