@@ -10,12 +10,20 @@ function getWeekKey(dateStr) {
   return `KW${week}-${d.getFullYear()}`;
 }
 
+function isEvenWeek(dateStr) {
+  const d = new Date(dateStr);
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  const days = Math.floor((d - jan1) / (24 * 60 * 60 * 1000));
+  const week = Math.ceil((days + jan1.getDay() + 1) / 7);
+  return week % 2 === 0;
+}
+
 export default function DienstplanApp() {
   const [mitarbeiter, setMitarbeiter] = useState([]);
   const [dienstplan, setDienstplan] = useState({});
   const [startDatum, setStartDatum] = useState(() => {
     const now = new Date();
-    now.setDate(now.getDate() - now.getDay() + 1); // Montag dieser Woche
+    now.setDate(now.getDate() - now.getDay() + 1);
     return now.toISOString().substring(0, 10);
   });
 
@@ -23,30 +31,60 @@ export default function DienstplanApp() {
   const schichten = ["Früh", "Spät"];
 
   const weekKey = getWeekKey(startDatum);
+  const evenWeek = isEvenWeek(startDatum);
 
   useEffect(() => {
     const gespeicherte = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
     setMitarbeiter(gespeicherte);
 
-    const plan = JSON.parse(localStorage.getItem("dienstplanDNDWochen")) || {};
+    const plan = JSON.parse(localStorage.getItem("dienstplanAuto")) || {};
     setDienstplan(plan);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("dienstplanDNDWochen", JSON.stringify(dienstplan));
+    localStorage.setItem("dienstplanAuto", JSON.stringify(dienstplan));
   }, [dienstplan]);
 
-  const onDrop = (tag, schicht, name) => {
-    setDienstplan((prev) => {
-      const copy = { ...prev };
-      if (!copy[weekKey]) copy[weekKey] = {};
-      if (!copy[weekKey][tag]) copy[weekKey][tag] = {};
-      if (!copy[weekKey][tag][schicht]) copy[weekKey][tag][schicht] = [];
-      if (!copy[weekKey][tag][schicht].includes(name)) {
-        copy[weekKey][tag][schicht].push(name);
-      }
-      return copy;
+  const autoGeneratePlan = () => {
+    const neueWoche = {};
+
+    const zfas = mitarbeiter.filter(m => m.rolle === "ZFA");
+    const azubis = mitarbeiter.filter(m => m.rolle === "Azubi");
+
+    tage.forEach((tag, tIndex) => {
+      neueWoche[tag] = {};
+
+      ["Früh", "Spät"].forEach((schicht) => {
+        const assigned = [];
+
+        // ZFA im Wechsel zuweisen
+        const zfaIndex = (evenWeek ? 0 : 1) + tIndex % zfas.length;
+        const zfa = zfas[zfaIndex % zfas.length];
+        if (zfa) assigned.push(zfa.name);
+
+        // Azubi prüfen
+        azubis.forEach((azubi) => {
+          const regel = azubi.regeln?.[tag];
+          if (!regel || regel.toLowerCase().includes("ab") || regel === "") {
+            if (regel?.toLowerCase().includes("ab")) {
+              const uhrzeit = parseInt(regel.split("ab")[1]);
+              if (schicht === "Spät") {
+                assigned.push(azubi.name);
+              }
+            } else {
+              assigned.push(azubi.name);
+            }
+          }
+        });
+
+        neueWoche[tag][schicht] = assigned;
+      });
     });
+
+    setDienstplan((prev) => ({
+      ...prev,
+      [weekKey]: neueWoche
+    }));
   };
 
   const removePerson = (tag, schicht, name) => {
@@ -59,7 +97,7 @@ export default function DienstplanApp() {
 
   return (
     <div>
-      <h2>Dienstplan – KW-Auswahl & Drag & Drop</h2>
+      <h2>Dienstplan – Automatisch & Manuell</h2>
 
       <label>
         Woche ab (Montag):
@@ -69,83 +107,50 @@ export default function DienstplanApp() {
           onChange={(e) => setStartDatum(e.target.value)}
         />
       </label>
+      <button onClick={autoGeneratePlan} style={{ marginLeft: "1rem" }}>
+        Dienstplan automatisch erstellen
+      </button>
 
-      <div style={{ display: "flex", gap: "2rem", marginTop: "2rem" }}>
-        <div>
-          <h3>Mitarbeiter</h3>
-          {mitarbeiter.map((m) => (
-            <div
-              key={m.name}
-              draggable
-              onDragStart={(e) => e.dataTransfer.setData("name", m.name)}
-              style={{
-                padding: "0.5rem",
-                border: "1px solid #ccc",
-                marginBottom: "0.5rem",
-                cursor: "grab"
-              }}
-            >
-              {m.name} ({m.rolle})
-            </div>
-          ))}
-        </div>
+      <div style={{ marginTop: "2rem" }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Tag</th>
+              {schichten.map((s) => (
+                <th key={s}>{s}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tage.map((tag) => (
+              <tr key={tag}>
+                <td>{tag}</td>
+                {schichten.map((schicht) => {
+                  const personen = dienstplan?.[weekKey]?.[tag]?.[schicht] || [];
+                  const hatZFA = personen.some((name) =>
+                    mitarbeiter.find((m) => m.name === name && m.rolle === "ZFA")
+                  );
 
-        <div style={{ flexGrow: 1 }}>
-          <table>
-            <thead>
-              <tr>
-                <th>Tag</th>
-                {schichten.map((s) => (
-                  <th key={s}>{s}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tage.map((tag) => (
-                <tr key={tag}>
-                  <td>{tag}</td>
-                  {schichten.map((schicht) => (
-                    <td
-                      key={schicht}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        const name = e.dataTransfer.getData("name");
-                        onDrop(tag, schicht, name);
-                      }}
-                      style={{
-                        minWidth: "120px",
-                        border: "1px solid #999",
-                        padding: "0.5rem",
-                        verticalAlign: "top"
-                      }}
-                    >
-                      {(dienstplan?.[weekKey]?.[tag]?.[schicht] || []).map((name) => (
-                        <div
-                          key={name}
-                          style={{
-                            background: "#eee",
-                            padding: "2px 5px",
-                            marginBottom: "4px",
-                            display: "flex",
-                            justifyContent: "space-between"
-                          }}
-                        >
+                  return (
+                    <td key={schicht} style={{ border: "1px solid #999", padding: "0.5rem" }}>
+                      {personen.map((name) => (
+                        <div key={name} style={{ display: "flex", justifyContent: "space-between" }}>
                           {name}
-                          <button
-                            onClick={() => removePerson(tag, schicht, name)}
-                            style={{ marginLeft: "0.5rem" }}
-                          >
-                            ×
-                          </button>
+                          <button onClick={() => removePerson(tag, schicht, name)}>×</button>
                         </div>
                       ))}
+                      {!hatZFA && (
+                        <div style={{ color: "red", fontSize: "0.8rem" }}>
+                          ⚠️ Keine ZFA eingeteilt!
+                        </div>
+                      )}
                     </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
