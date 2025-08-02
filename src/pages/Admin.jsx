@@ -1,16 +1,41 @@
 
 import { useEffect, useState } from "react";
 
-// Lokale Mitarbeiterliste aus dem Speicher laden oder leeren Array
-const loadMitarbeiter = () =>
-  JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
+const defaultMitarbeiter = 
+[
+  {
+    "name": "Pam",
+    "rolle": "ZFA",
+    "regeln": "default"
+  },
+  {
+    "name": "Andre",
+    "rolle": "ZFA",
+    "regeln": "default"
+  },
+  {
+    "name": "Susanne",
+    "rolle": "Azubi",
+    "regeln": "default"
+  }
+]
+;
+
+// Initialisiert Mitarbeiterliste – mit Fallback auf Standard
+const loadMitarbeiter = () => {
+  const gespeichert = localStorage.getItem("mitarbeiterListe");
+  if (gespeichert) return JSON.parse(gespeichert);
+
+  // Beim ersten Mal Standard laden und direkt speichern
+  localStorage.setItem("mitarbeiterListe", JSON.stringify(defaultMitarbeiter));
+  return defaultMitarbeiter;
+};
 
 export default function Admin() {
   const [mitarbeiterListe, setMitarbeiterListe] = useState(loadMitarbeiter);
   const [name, setName] = useState("");
   const [rolle, setRolle] = useState("Azubi");
 
-  // Änderungen automatisch in localStorage speichern
   useEffect(() => {
     localStorage.setItem("mitarbeiterListe", JSON.stringify(mitarbeiterListe));
   }, [mitarbeiterListe]);
@@ -20,7 +45,7 @@ export default function Admin() {
     const neuerMitarbeiter = {
       name,
       rolle,
-      regeln: (datum) => null, // Standard: keine Regeln
+      regeln: "default"
     };
     setMitarbeiterListe([...mitarbeiterListe, neuerMitarbeiter]);
     setName("");
@@ -50,7 +75,7 @@ export default function Admin() {
       <ul>
         {mitarbeiterListe.map((m) => (
           <li key={m.name}>
-            {m.name} ({m.rolle}){" "}
+            {m.name} ({m.rolle}) 
             <button onClick={() => removeMitarbeiter(m.name)}>Entfernen</button>
           </li>
         ))}
