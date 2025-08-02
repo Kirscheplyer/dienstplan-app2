@@ -2,32 +2,48 @@
 import React, { useEffect, useState } from "react";
 import "./style.css";
 
+function getWeekKey(dateStr) {
+  const d = new Date(dateStr);
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  const days = Math.floor((d - jan1) / (24 * 60 * 60 * 1000));
+  const week = Math.ceil((days + jan1.getDay() + 1) / 7);
+  return `KW${week}-${d.getFullYear()}`;
+}
+
 export default function DienstplanApp() {
   const [mitarbeiter, setMitarbeiter] = useState([]);
   const [dienstplan, setDienstplan] = useState({});
+  const [startDatum, setStartDatum] = useState(() => {
+    const now = new Date();
+    now.setDate(now.getDate() - now.getDay() + 1); // Montag dieser Woche
+    return now.toISOString().substring(0, 10);
+  });
 
   const tage = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
   const schichten = ["Früh", "Spät"];
+
+  const weekKey = getWeekKey(startDatum);
 
   useEffect(() => {
     const gespeicherte = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
     setMitarbeiter(gespeicherte);
 
-    const plan = JSON.parse(localStorage.getItem("dienstplanDND")) || {};
+    const plan = JSON.parse(localStorage.getItem("dienstplanDNDWochen")) || {};
     setDienstplan(plan);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("dienstplanDND", JSON.stringify(dienstplan));
+    localStorage.setItem("dienstplanDNDWochen", JSON.stringify(dienstplan));
   }, [dienstplan]);
 
   const onDrop = (tag, schicht, name) => {
     setDienstplan((prev) => {
       const copy = { ...prev };
-      if (!copy[tag]) copy[tag] = {};
-      if (!copy[tag][schicht]) copy[tag][schicht] = [];
-      if (!copy[tag][schicht].includes(name)) {
-        copy[tag][schicht].push(name);
+      if (!copy[weekKey]) copy[weekKey] = {};
+      if (!copy[weekKey][tag]) copy[weekKey][tag] = {};
+      if (!copy[weekKey][tag][schicht]) copy[weekKey][tag][schicht] = [];
+      if (!copy[weekKey][tag][schicht].includes(name)) {
+        copy[weekKey][tag][schicht].push(name);
       }
       return copy;
     });
@@ -36,15 +52,25 @@ export default function DienstplanApp() {
   const removePerson = (tag, schicht, name) => {
     setDienstplan((prev) => {
       const copy = { ...prev };
-      copy[tag][schicht] = copy[tag][schicht].filter((n) => n !== name);
+      copy[weekKey][tag][schicht] = copy[weekKey][tag][schicht].filter((n) => n !== name);
       return copy;
     });
   };
 
   return (
     <div>
-      <h2>Dienstplan – Drag & Drop</h2>
-      <div style={{ display: "flex", gap: "2rem", marginBottom: "2rem" }}>
+      <h2>Dienstplan – KW-Auswahl & Drag & Drop</h2>
+
+      <label>
+        Woche ab (Montag):
+        <input
+          type="date"
+          value={startDatum}
+          onChange={(e) => setStartDatum(e.target.value)}
+        />
+      </label>
+
+      <div style={{ display: "flex", gap: "2rem", marginTop: "2rem" }}>
         <div>
           <h3>Mitarbeiter</h3>
           {mitarbeiter.map((m) => (
@@ -93,7 +119,7 @@ export default function DienstplanApp() {
                         verticalAlign: "top"
                       }}
                     >
-                      {(dienstplan?.[tag]?.[schicht] || []).map((name) => (
+                      {(dienstplan?.[weekKey]?.[tag]?.[schicht] || []).map((name) => (
                         <div
                           key={name}
                           style={{
