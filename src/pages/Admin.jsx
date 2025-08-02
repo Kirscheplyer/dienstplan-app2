@@ -1,32 +1,34 @@
 
 import { useEffect, useState } from "react";
 
-const defaultMitarbeiter = 
-[
+const defaultMitarbeiter = [
   {
-    "name": "Pam",
-    "rolle": "ZFA",
-    "regeln": "default"
+    name: "Pam",
+    rolle: "ZFA",
+    regeln: { Montag: "", Dienstag: "", Mittwoch: "", Donnerstag: "", Freitag: "" }
   },
   {
-    "name": "Andre",
-    "rolle": "ZFA",
-    "regeln": "default"
+    name: "Andre",
+    rolle: "ZFA",
+    regeln: { Montag: "", Dienstag: "", Mittwoch: "", Donnerstag: "", Freitag: "" }
   },
   {
-    "name": "Susanne",
-    "rolle": "Azubi",
-    "regeln": "default"
+    name: "Susanne",
+    rolle: "Azubi",
+    regeln: {
+      Montag: "",
+      Dienstag: "Schule (ganztägig)",
+      Mittwoch: "",
+      Donnerstag: "",
+      Freitag: "Schule (ganztägig)"
+    }
   }
-]
-;
+];
 
-// Initialisiert Mitarbeiterliste – mit Fallback auf Standard
 const loadMitarbeiter = () => {
   const gespeichert = localStorage.getItem("mitarbeiterListe");
   if (gespeichert) return JSON.parse(gespeichert);
 
-  // Beim ersten Mal Standard laden und direkt speichern
   localStorage.setItem("mitarbeiterListe", JSON.stringify(defaultMitarbeiter));
   return defaultMitarbeiter;
 };
@@ -45,7 +47,7 @@ export default function Admin() {
     const neuerMitarbeiter = {
       name,
       rolle,
-      regeln: "default"
+      regeln: { Montag: "", Dienstag: "", Mittwoch: "", Donnerstag: "", Freitag: "" }
     };
     setMitarbeiterListe([...mitarbeiterListe, neuerMitarbeiter]);
     setName("");
@@ -53,9 +55,13 @@ export default function Admin() {
   };
 
   const removeMitarbeiter = (nameToRemove) => {
-    setMitarbeiterListe(
-      mitarbeiterListe.filter((m) => m.name !== nameToRemove)
-    );
+    setMitarbeiterListe(mitarbeiterListe.filter((m) => m.name !== nameToRemove));
+  };
+
+  const updateRegel = (personIndex, tag, wert) => {
+    const neueListe = [...mitarbeiterListe];
+    neueListe[personIndex].regeln[tag] = wert;
+    setMitarbeiterListe(neueListe);
   };
 
   return (
@@ -73,10 +79,22 @@ export default function Admin() {
       <button onClick={addMitarbeiter}>Hinzufügen</button>
 
       <ul>
-        {mitarbeiterListe.map((m) => (
+        {mitarbeiterListe.map((m, index) => (
           <li key={m.name}>
-            {m.name} ({m.rolle}) 
+            <strong>{m.name}</strong> ({m.rolle})
             <button onClick={() => removeMitarbeiter(m.name)}>Entfernen</button>
+            <div style={{ marginLeft: "1rem" }}>
+              {["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"].map((tag) => (
+                <div key={tag}>
+                  {tag}:{" "}
+                  <input
+                    type="text"
+                    value={m.regeln?.[tag] || ""}
+                    onChange={(e) => updateRegel(index, tag, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
           </li>
         ))}
       </ul>
