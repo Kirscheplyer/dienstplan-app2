@@ -9,17 +9,20 @@ export default function Admin() {
 
   const generiereDienstplan = () => {
     const gespeicherteMitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
-    const tage = 14;
     const plan = [];
+    const einsatzZaehler = {};
+    const letzteSchicht = {}; // { "Name": { datum: "...", schicht: "Frühschicht" } }
+
+    const tage = 14;
     const start = new Date();
 
     for (let i = 0; i < tage; i++) {
       const datum = new Date();
       datum.setDate(start.getDate() + i);
-      const wochentag = datum.getDay();
-      const tagName = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][wochentag];
+      const tagName = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][datum.getDay()];
+      const datumStr = datum.toISOString().split("T")[0];
 
-      if (wochentag === 0 || wochentag === 6) continue;
+      if (tagName === "So" || tagName === "Sa") continue;
 
       const verfuegbare = gespeicherteMitarbeiter.filter((m) => {
         if (!m.name) return false;
@@ -31,25 +34,57 @@ export default function Admin() {
           if (r.nurMoFr && (tagName === "Sa" || tagName === "So")) return false;
         }
 
+        // Früh-/Spät nicht direkt nacheinander
+        const letzter = letzteSchicht[m.name];
+        if (letzter) {
+          const letzterTag = new Date(letzter.datum);
+          const diff = (datum - letzterTag) / (1000 * 60 * 60 * 24);
+          if (
+            diff === 1 &&
+            ((letzter.schicht === "Spätschicht" && m.nichtNachSpaet) ||
+              (letzter.schicht === "Frühschicht" && m.nichtVorFrueh))
+          ) {
+            return false;
+          }
+        }
+
         return true;
       });
 
-      if (verfuegbare.length === 0) continue;
+      const zfas = verfuegbare.filter((m) => m.rolle === "ZFA");
+      const azubis = verfuegbare.filter((m) => m.rolle === "Azubi");
 
-      // Gleichmäßig auf Früh und Spät verteilen (abwechselnd)
-      const haelfte = Math.ceil(verfuegbare.length / 2);
-      const fruehGruppe = verfuegbare.slice(0, haelfte);
-      const spaetGruppe = verfuegbare.slice(haelfte);
+      // Sortieren nach wer am wenigsten Einsätze hat
+      const sortiert = (liste) => liste.sort((a, b) => (einsatzZaehler[a.name] || 0) - (einsatzZaehler[b.name] || 0));
 
-      fruehGruppe.forEach(m =>
-        plan.push({ datum: datum.toISOString().split("T")[0], name: m.name, schicht: "Frühschicht" })
-      );
-      spaetGruppe.forEach(m => {
+      const fruehGruppe = sortiert([...zfas, ...azubis]).slice(0, 2);
+      const spaetGruppe = sortiert([...zfas, ...azubis].filter(m => {
         const r = m.rohdaten || {};
-        if (!(r.keineSpaet && m.rolle === "Azubi")) {
-          plan.push({ datum: datum.toISOString().split("T")[0], name: m.name, schicht: "Spätschicht" });
-        }
-      });
+        return !(r.keineSpaet && m.rolle === "Azubi");
+      })).slice(0, 2);
+
+      const tagPlan = [];
+
+      const mindZfaFrueh = fruehGruppe.some(m => m.rolle === "ZFA");
+      const mindZfaSpaet = spaetGruppe.some(m => m.rolle === "ZFA");
+
+      if (mindZfaFrueh) {
+        fruehGruppe.forEach(m => {
+          tagPlan.push({ datum: datumStr, name: m.name, schicht: "Frühschicht" });
+          einsatzZaehler[m.name] = (einsatzZaehler[m.name] || 0) + 1;
+          letzteSchicht[m.name] = { datum: datumStr, schicht: "Frühschicht" };
+        });
+      }
+
+      if (mindZfaSpaet) {
+        spaetGruppe.forEach(m => {
+          tagPlan.push({ datum: datumStr, name: m.name, schicht: "Spätschicht" });
+          einsatzZaehler[m.name] = (einsatzZaehler[m.name] || 0) + 1;
+          letzteSchicht[m.name] = { datum: datumStr, schicht: "Spätschicht" };
+        });
+      }
+
+      plan.push(...tagPlan);
     }
 
     localStorage.setItem("dienstplan", JSON.stringify(plan));
@@ -63,8 +98,8 @@ export default function Admin() {
       <DienstplanApp />
 
       <div style={{ marginTop: "2rem" }}>
-        <h2>2-Wochen-Dienstplan automatisch erstellen</h2>
-        <button onClick={generiereDienstplan}>🛠 Dienstplan automatisch generieren</button>
+        <h2>2-Wochen-Dienstplan optimiert erstellen</h2>
+        <button onClick={generiereDienstplan}>⚖️ Dienstplan optimieren</button>
 
         {generierterPlan.length > 0 ? (
           <div>
