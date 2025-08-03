@@ -26,7 +26,6 @@ export default function Admin() {
         const r = m.rohdaten || {};
         const istAzubi = m.rolle === "Azubi";
 
-        // Regeln für Azubis
         if (istAzubi) {
           if (r.schultage?.includes(tagName)) return false;
           if (r.nurMoFr && (tagName === "Sa" || tagName === "So")) return false;
@@ -37,18 +36,20 @@ export default function Admin() {
 
       if (verfuegbare.length === 0) continue;
 
-      const früh = verfuegbare.find(m => !(m.rohdaten?.keineSpaet && m.rolle === "Azubi"));
-      const spät = verfuegbare.find(m => {
-        const r = m.rohdaten || {};
-        return !(r.keineSpaet && m.rolle === "Azubi");
-      }) || früh;
+      // Gleichmäßig auf Früh und Spät verteilen (abwechselnd)
+      const haelfte = Math.ceil(verfuegbare.length / 2);
+      const fruehGruppe = verfuegbare.slice(0, haelfte);
+      const spaetGruppe = verfuegbare.slice(haelfte);
 
-      if (früh) {
-        plan.push({ datum: datum.toISOString().split("T")[0], name: früh.name, schicht: "Frühschicht" });
-      }
-      if (spät && spät.name !== früh?.name) {
-        plan.push({ datum: datum.toISOString().split("T")[0], name: spät.name, schicht: "Spätschicht" });
-      }
+      fruehGruppe.forEach(m =>
+        plan.push({ datum: datum.toISOString().split("T")[0], name: m.name, schicht: "Frühschicht" })
+      );
+      spaetGruppe.forEach(m => {
+        const r = m.rohdaten || {};
+        if (!(r.keineSpaet && m.rolle === "Azubi")) {
+          plan.push({ datum: datum.toISOString().split("T")[0], name: m.name, schicht: "Spätschicht" });
+        }
+      });
     }
 
     localStorage.setItem("dienstplan", JSON.stringify(plan));
@@ -63,7 +64,7 @@ export default function Admin() {
 
       <div style={{ marginTop: "2rem" }}>
         <h2>2-Wochen-Dienstplan automatisch erstellen</h2>
-        <button onClick={generiereDienstplan}>🛠 Dienstplan für 1 Woche generieren</button>
+        <button onClick={generiereDienstplan}>🛠 Dienstplan automatisch generieren</button>
 
         {generierterPlan.length > 0 ? (
           <div>
