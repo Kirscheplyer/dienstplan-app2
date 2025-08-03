@@ -1,5 +1,18 @@
+
+import React from "react";
 import { UserButton } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
+
+const schichtzeiten = {
+  moDo: {
+    Frühschicht: "07:30 - 14:30",
+    Spätschicht: "13:30 - 20:30",
+  },
+  fr: {
+    Frühschicht: "07:30 - 13:30",
+    Spätschicht: "12:30 - 18:30",
+  },
+};
 
 export default function Dashboard() {
   const [dienstplan, setDienstplan] = useState([]);
@@ -26,6 +39,12 @@ export default function Dashboard() {
   const sichtbarerPlan = gefiltertNach
     ? dienstplan.filter((e) => e.name === gefiltertNach)
     : dienstplan;
+
+  const getUhrzeit = (datum, schicht) => {
+    const day = new Date(datum).getDay();
+    if (day === 5) return schichtzeiten.fr[schicht] || "";
+    return schichtzeiten.moDo[schicht] || "";
+  };
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -61,7 +80,9 @@ export default function Dashboard() {
                 <tr key={index}>
                   <td>{eintrag.datum}</td>
                   <td>{eintrag.name}</td>
-                  <td>{eintrag.schicht}</td>
+                  <td>
+                    {eintrag.schicht} ({getUhrzeit(eintrag.datum, eintrag.schicht)})
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { SignedIn, SignedOut, SignInButton, useUser, UserButton } from "@clerk/clerk-react";
 import { useEffect } from "react";
