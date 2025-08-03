@@ -3,16 +3,12 @@ import { useUser, UserButton } from "@clerk/clerk-react";
 import { useState } from "react";
 import DienstplanApp from "../DienstplanApp";
 
-const ADMIN_ID = "user_30NpYU323qGA3LO4JedrBWRQXXP";
-
 export default function Admin() {
   const { user } = useUser();
   const [generierterPlan, setGenerierterPlan] = useState([]);
 
   const generiereDienstplan = () => {
     const gespeicherteMitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterListe")) || [];
-    console.log("Mitarbeiterliste geladen:", gespeicherteMitarbeiter);
-
     const tage = 14;
     const plan = [];
     const start = new Date();
@@ -27,25 +23,35 @@ export default function Admin() {
 
       const verfuegbare = gespeicherteMitarbeiter.filter((m) => {
         if (!m.name) return false;
-        const regel = m.rohdaten?.[tagName]?.toLowerCase() || "";
-        return !regel.includes("nicht verfügbar");
+        const r = m.rohdaten || {};
+        const istAzubi = m.rolle === "Azubi";
+
+        // Regeln für Azubis
+        if (istAzubi) {
+          if (r.schultage?.includes(tagName)) return false;
+          if (r.nurMoFr && (tagName === "Sa" || tagName === "So")) return false;
+        }
+
+        return true;
       });
 
       if (verfuegbare.length === 0) continue;
 
-      const früh = verfuegbare[0 % verfuegbare.length];
-      const spät = verfuegbare[1 % verfuegbare.length] || verfuegbare[0];
+      const früh = verfuegbare.find(m => !(m.rohdaten?.keineSpaet && m.rolle === "Azubi"));
+      const spät = verfuegbare.find(m => {
+        const r = m.rohdaten || {};
+        return !(r.keineSpaet && m.rolle === "Azubi");
+      }) || früh;
 
       if (früh) {
         plan.push({ datum: datum.toISOString().split("T")[0], name: früh.name, schicht: "Frühschicht" });
       }
-      if (spät && spät.name !== früh.name) {
+      if (spät && spät.name !== früh?.name) {
         plan.push({ datum: datum.toISOString().split("T")[0], name: spät.name, schicht: "Spätschicht" });
       }
     }
 
     localStorage.setItem("dienstplan", JSON.stringify(plan));
-    console.log("Dienstplan gespeichert:", plan);
     setGenerierterPlan(plan);
   };
 

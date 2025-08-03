@@ -6,7 +6,11 @@ export default function DienstplanApp() {
   const [mitarbeiter, setMitarbeiter] = useState([]);
   const [neuerName, setNeuerName] = useState("");
   const [neueRolle, setNeueRolle] = useState("ZFA");
-  const [azubiRegeln, setAzubiRegeln] = useState({});
+  const [azubiRegeln, setAzubiRegeln] = useState({
+    schultage: [],
+    keineSpaet: false,
+    nurMoFr: true,
+  });
 
   useEffect(() => {
     const saved = localStorage.getItem("mitarbeiterListe");
@@ -17,8 +21,17 @@ export default function DienstplanApp() {
     localStorage.setItem("mitarbeiterListe", JSON.stringify(mitarbeiter));
   }, [mitarbeiter]);
 
-  const handleRegelChange = (tag, value) => {
-    setAzubiRegeln(prev => ({ ...prev, [tag]: value }));
+  const handleRegelChange = (key, value) => {
+    setAzubiRegeln(prev => ({ ...prev, [key]: value }));
+  };
+
+  const toggleSchultag = (tag) => {
+    setAzubiRegeln(prev => ({
+      ...prev,
+      schultage: prev.schultage.includes(tag)
+        ? prev.schultage.filter(t => t !== tag)
+        : [...prev.schultage, tag]
+    }));
   };
 
   const hinzufuegen = () => {
@@ -28,17 +41,12 @@ export default function DienstplanApp() {
       rolle: neueRolle,
     };
     if (neueRolle === "Azubi") {
-      neuerEintrag.regeln = (datum) => {
-        const tag = datum.getDay();
-        const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-        return azubiRegeln[tage[tag]];
-      };
-      neuerEintrag.rohdaten = azubiRegeln; // für Anzeige / Debug
+      neuerEintrag.rohdaten = azubiRegeln;
     }
     setMitarbeiter([...mitarbeiter, neuerEintrag]);
     setNeuerName("");
     setNeueRolle("ZFA");
-    setAzubiRegeln({});
+    setAzubiRegeln({ schultage: [], keineSpaet: false, nurMoFr: true });
   };
 
   const entfernen = (name) => {
@@ -58,29 +66,50 @@ export default function DienstplanApp() {
         <option value="ZFA">ZFA</option>
         <option value="Azubi">Azubi</option>
       </select>
+
       {neueRolle === "Azubi" && (
-        <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-          <p><b>Wöchentliche Azubi-Regeln:</b></p>
-          {["Mo", "Di", "Mi", "Do", "Fr"].map((tag) => (
-            <div key={tag}>
-              <label>{tag}: </label>
-              <input
-                type="text"
-                placeholder="z.B. Schule ab 11 Uhr / Verfügbar ab 14 Uhr / frei / leer lassen"
-                value={azubiRegeln[tag] || ""}
-                onChange={(e) => handleRegelChange(tag, e.target.value)}
-              />
-            </div>
-          ))}
+        <div style={{ marginTop: "1rem" }}>
+          <h4>Azubi-Regeln</h4>
+          <label>
+            <input
+              type="checkbox"
+              checked={azubiRegeln.keineSpaet}
+              onChange={(e) => handleRegelChange("keineSpaet", e.target.checked)}
+            />
+            Keine Spätschicht
+          </label>
+          <br />
+          <label>
+            <input
+              type="checkbox"
+              checked={azubiRegeln.nurMoFr}
+              onChange={(e) => handleRegelChange("nurMoFr", e.target.checked)}
+            />
+            Nur Montag–Freitag arbeiten
+          </label>
+          <br />
+          <div style={{ marginTop: "0.5rem" }}>
+            <strong>Berufsschultage:</strong><br />
+            {["Mo", "Di", "Mi", "Do", "Fr"].map(tag => (
+              <label key={tag} style={{ marginRight: "1rem" }}>
+                <input
+                  type="checkbox"
+                  checked={azubiRegeln.schultage.includes(tag)}
+                  onChange={() => toggleSchultag(tag)}
+                /> {tag}
+              </label>
+            ))}
+          </div>
         </div>
       )}
+
+      <br />
       <button onClick={hinzufuegen}>Hinzufügen</button>
 
       <ul>
-        {mitarbeiter.map((m, i) => (
-          <li key={i}>
-            {m.name} ({m.rolle})
-            <button onClick={() => entfernen(m.name)} style={{ marginLeft: "1rem" }}>Entfernen</button>
+        {mitarbeiter.map((m) => (
+          <li key={m.name}>
+            {m.name} ({m.rolle}) <button onClick={() => entfernen(m.name)}>Entfernen</button>
           </li>
         ))}
       </ul>
